@@ -1,0 +1,8 @@
+# Set this to the location of your Android SDK. Although most likely Android
+# Studio knows about it already.
+sdk.dir=/home/adria/Android/sdk
+# This path should include the location of your c2hs binary, and your normal
+# system path.
+path=/home/adria/.cabal/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
+# Set this to the directory the cross-compiling Cabal wrappers are in
+cabalPath=/opt/ghc/bin

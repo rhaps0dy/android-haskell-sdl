@@ -1,0 +1,73 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 21
+    buildToolsVersion "23.0.0 rc2"
+
+    defaultConfig {
+        applicationId "ga.agarri.agario"
+        minSdkVersion 10
+        targetSdkVersion 21
+
+        ndk {
+            moduleName "main"
+        }
+    }
+
+    sourceSets.main.jniLibs.srcDir 'build/haskell'
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+        }
+    }
+}
+
+Properties properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
+def path = properties.getProperty('path')
+def pwd = 'src/main/haskell'
+def cabalPath = properties.getProperty('cabalPath')
+
+task x86Config(type: Exec) {
+    workingDir pwd
+    environment 'PATH', path
+    commandLine cabalPath+'/i686-linux-android-cabal', 'configure', '--builddir=../../../build/haskell/x86'
+}
+
+task x86Build(type: Exec) {
+    workingDir pwd
+    environment 'PATH', path
+    commandLine cabalPath+'/i686-linux-android-cabal', 'build', '--builddir=../../../build/haskell/x86'
+}
+
+task armeabiConfig(type: Exec) {
+    workingDir pwd
+    environment 'PATH', path
+    commandLine cabalPath+'/arm-linux-androideabi-cabal', 'configure', '--builddir=../../../build/haskell/armeabi'
+}
+
+task armeabiBuild(type: Exec) {
+    workingDir pwd
+    environment 'PATH', path
+    commandLine cabalPath+'/arm-linux-androideabi-cabal', 'build', '--builddir=../../../build/haskell/armeabi'
+}
+
+task x86CopyLib(type: Exec) {
+    workingDir 'build/haskell/x86'
+    commandLine 'cp', 'build/libmain.so/libmain.so', './libmain.so'
+}
+
+task armeabiCopyLib(type: Exec) {
+    workingDir 'build/haskell/armeabi'
+    commandLine 'cp', 'build/libmain.so/libmain.so', './libmain.so'
+}
+
+armeabiBuild.dependsOn(armeabiConfig)
+armeabiCopyLib.dependsOn(armeabiBuild)
+preBuild.dependsOn(armeabiCopyLib)
+
+x86Build.dependsOn(x86Config)
+x86CopyLib.dependsOn(x86Build)
+preBuild.dependsOn(x86CopyLib)
