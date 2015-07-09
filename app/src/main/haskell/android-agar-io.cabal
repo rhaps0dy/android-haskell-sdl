@@ -16,7 +16,7 @@ cabal-version:       >=1.10
 executable libmain.so
   main-is:             HaskellActivity.hs
   other-modules:       Android, Draw
-  build-depends:       base, sdl2
+  build-depends:       base, sdl2, stm
   default-language:    Haskell2010
   ghc-options:         -no-hs-main -threaded
   build-tools:         c2hs

@@ -12,18 +12,10 @@ import Control.Applicative ((<*>), (<$>))
 import qualified Draw
 import Data.IORef (IORef, newIORef, readIORef, writeIORef)
 import System.IO.Unsafe (unsafePerformIO)
+import Control.Concurrent.STM.TVar (readTVarIO)
 
 import Graphics.UI.SDL.Event as SDL
 import Graphics.UI.SDL.Types as SDL
 
 foreign export ccall "hsMain" hsMain :: IO ()
-hsMain = do
-  Draw.init
-  loop
-  Draw.quit
-
-loop :: IO ()
-loop = do
-  SDL.pumpEvents
-  Draw.render
-  loop
+hsMain = Draw.init
