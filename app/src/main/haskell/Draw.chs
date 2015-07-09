@@ -16,13 +16,7 @@ import Graphics.UI.SDL.Enum
 
 import Android (LogPriority(..))
 import qualified Android
-import System.Exit (exitSuccess, exitFailure)
 import System.Mem (performGC)
-import System.IO.Unsafe (unsafePerformIO)
-
-import Control.Concurrent.STM.TVar (newTVarIO, readTVarIO, writeTVar, TVar)
-import Control.Monad.STM (atomically)
-import Control.Concurrent (forkIO)
 
 #include <GLES2/gl2.h>
 
@@ -32,66 +26,13 @@ log :: String -> IO ()
 log = Android.log AndroidLogDebug "AgarIO.Draw"
 
 die :: String -> IO ()
-die s = do
-  log s
-  exitFailure
-
-shouldRender :: TVar Bool
-shouldRender = unsafePerformIO $ newTVarIO True
-
-type EventFilter = Ptr () -> Ptr SDL.Event -> IO CInt
-
-eventFilter :: EventFilter
-eventFilter _ eventPtr = do
-  event <- peek eventPtr
-  determineAction $ SDL.eventType event
-  where determineAction :: Word32 -> IO CInt
-        determineAction e
-          | e == SDL_APP_TERMINATING = do
-            log "SDL_APP_TERMINATING handled"
-            atomically $ writeTVar shouldRender False
---            quit
-            return' 0
-
-          | e == SDL_APP_LOWMEMORY = do
-            performGC
-            return' 0
-
-          | e == SDL_APP_WILLENTERBACKGROUND = do
-            log "SDL_APP_WILL BACKGROUND handled"
-            atomically $ writeTVar shouldRender False
-            return' 0
-
-          | e == SDL_APP_DIDENTERFOREGROUND = do
-            log "SDL_APP_DID FOREGROUND handled"
-            atomically $ writeTVar shouldRender True
-            return' 0
-
-          | e == SDL_APP_WILLENTERFOREGROUND = do
-            log "SDL_APP_WILL FOREGROUN handled"
-            return' 0
-          | e == SDL_APP_DIDENTERBACKGROUND = do
-            log "SDL_APP_DID BACKGROUND handled"
-            return' 0
-          | otherwise = return' 1
-
-        return' = return . fromIntegral
-
-foreign import ccall "wrapper" mkEventFilter :: EventFilter -> IO (FunPtr EventFilter)
+die = Android.log AndroidLogError "AgarIO.Draw"
 
 init :: IO ()
 init = do
   result <- SDL.init (SDL_INIT_TIMER .|. SDL_INIT_VIDEO .|. SDL_INIT_EVENTS)
-  if result /= 0 then die ("Failed to initialize SDL: " ++ show result) else do
-    log "SDL properly initialized!"
-    f <- mkEventFilter eventFilter
-    SDL.setEventFilter f nullPtr
-    startRendering
-
-startRendering :: IO ()
-startRendering = do
---  w <- readTVarIO window
---  if w == nullPtr then do
+  if result /= 0 then die ("Failed to initialize SDL: " ++ show result) else return ()
+  log "SDL properly initialized!"
   SDL.glSetAttribute SDL_GL_CONTEXT_MAJOR_VERSION (fromIntegral 2)
   SDL.glSetAttribute SDL_GL_CONTEXT_MINOR_VERSION (fromIntegral 0)
   SDL.glSetAttribute SDL_GL_CONTEXT_PROFILE_MASK SDL_GL_CONTEXT_PROFILE_ES
@@ -119,7 +60,6 @@ quit = do
   log "Deleted window"
   SDL.quit
   log "Quit SDL"
-  exitSuccess
 
 handleEvents :: IO ()
 handleEvents = do
@@ -132,7 +72,6 @@ handleEvents = do
         determineAction e
           | e == SDL_QUIT = do
             log "SDL_QUIT handled"
-            atomically $ writeTVar shouldRender False
             quit
           | e == SDL_APP_LOWMEMORY = do
             performGC
@@ -141,12 +80,8 @@ handleEvents = do
 
 render :: IO ()
 render = do
-  shRend <- readTVarIO shouldRender
-  if True then do
-    {#call glClear #} {#const GL_COLOR_BUFFER_BIT #}
-    SDL.glGetCurrentWindow >>= SDL.glSwapWindow
-    handleEvents
-    log "rendering"
-  else
-    log "Not rendering"
+  {#call glClear #} {#const GL_COLOR_BUFFER_BIT #}
+  SDL.glGetCurrentWindow >>= SDL.glSwapWindow
+  handleEvents
+  log "render"
   render
