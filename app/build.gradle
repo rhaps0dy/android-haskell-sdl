@@ -30,6 +30,12 @@ def path = properties.getProperty('path')
 def pwd = 'src/main/haskell'
 def cabalPath = properties.getProperty('cabalPath')
 
+task x86Install(type: Exec) {
+    workingDir pwd
+    environment 'PATH', path
+    commandLine cabalPath+'/i686-linux-android-cabal', 'install', '--only-dependencies'
+}
+
 task x86Config(type: Exec) {
     workingDir pwd
     environment 'PATH', path
@@ -40,6 +46,12 @@ task x86Build(type: Exec) {
     workingDir pwd
     environment 'PATH', path
     commandLine cabalPath+'/i686-linux-android-cabal', 'build', '--builddir=../../../build/haskell/x86'
+}
+
+task armeabiInstall(type: Exec) {
+    workingDir pwd
+    environment 'PATH', path
+    commandLine cabalPath+'/arm-linux-androideabi-cabal', 'install', '--only-dependencies'
 }
 
 task armeabiConfig(type: Exec) {
@@ -64,10 +76,12 @@ task armeabiCopyLib(type: Exec) {
     commandLine 'cp', 'build/libmain.so/libmain.so', './libmain.so'
 }
 
-armeabiBuild.dependsOn(armeabiConfig)
-armeabiCopyLib.dependsOn(armeabiBuild)
-preBuild.dependsOn(armeabiCopyLib)
-
+x86Config.dependsOn(x86Install)
 x86Build.dependsOn(x86Config)
 x86CopyLib.dependsOn(x86Build)
 preBuild.dependsOn(x86CopyLib)
+
+armeabiConfig.dependsOn(armeabiInstall)
+armeabiBuild.dependsOn(armeabiConfig)
+armeabiCopyLib.dependsOn(armeabiBuild)
+preBuild.dependsOn(armeabiCopyLib)
